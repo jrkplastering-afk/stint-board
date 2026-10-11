@@ -1,0 +1,28 @@
+name: Build Windows exe
+
+on:
+  push:
+    tags: ["v*"]        # publishing a tag like v0.1.0 builds and releases the exe
+  workflow_dispatch:     # lets you run it by hand from the Actions tab
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyirsdk pyinstaller
+      - run: pyinstaller --onefile --name StintBoard --add-data "index.html;." server.py
+      - run: Compress-Archive -Path dist/StintBoard.exe -DestinationPath StintBoard-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StintBoard-windows
+          path: StintBoard-windows.zip
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: StintBoard-windows.zip

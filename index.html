@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iRacing Live Timing</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{--bg:#0b0d10;--panel:#11141a;--line:#1d222b;--text:#e6e8ec;--mute:#6a7280;--green:#3ddc84;--purple:#b86bff;--amber:#f5b83d;--orange:#ff7a1a;--red:#ff4d4d}
+@media (prefers-color-scheme:light){:root:not([data-x]){}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-variant-numeric:tabular-nums}
+body{display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:24px;padding:10px 16px;border-bottom:2px solid var(--green);background:var(--panel);flex-wrap:wrap}
+.lap{font-size:34px;font-weight:700;line-height:1}.lap small{font-size:16px;color:var(--mute);margin-left:4px}
+.flag{padding:3px 10px;border:1px solid var(--line);font-weight:700;letter-spacing:.06em;font-size:14px}
+.flag.GREEN{color:var(--green);border-color:var(--green)}.flag.CAUTION{color:var(--amber);border-color:var(--amber)}.flag.RED{color:var(--red);border-color:var(--red)}
+.meta{color:var(--mute);font-size:15px}.meta b{color:var(--text);font-weight:600}
+.spacer{flex:1}
+main{flex:1;display:flex;min-height:0}
+#tablewrap{flex:1;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:17px}
+th{position:sticky;top:0;background:var(--bg);color:var(--mute);font-weight:600;font-size:13px;letter-spacing:.06em;text-align:right;padding:8px 8px;border-bottom:1px solid var(--line)}
+td{padding:6px 8px;text-align:right;border-bottom:1px solid #151920;white-space:nowrap}
+th.l,td.l{text-align:left}
+tr{cursor:pointer}tr:hover td{background:#141821}
+tr.sel td{background:#1a1f2a}tr.me td.nm{color:var(--orange)}
+td.pos{font-size:22px;font-weight:700;text-align:center;width:44px}
+td.num{font-weight:700;border-left:3px solid var(--mute);padding-left:10px}
+td.nm{font-weight:700;text-align:left}td.nm span{color:var(--mute);font-weight:500;margin-left:6px;font-size:14px}
+.lead{color:var(--orange);font-size:13px;letter-spacing:.06em}
+.p{color:var(--purple)}.g{color:var(--green)}.m{color:var(--mute)}.y{color:var(--amber)}
+.pit{color:var(--orange);font-weight:700}
+aside{width:320px;border-left:1px solid var(--line);background:var(--panel);padding:16px;overflow:auto}
+aside h2{margin:0;font-size:26px}aside .sub{color:var(--mute);margin-bottom:14px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:14px}
+.pair div{background:var(--panel);padding:10px}
+.pair label,.stats label{display:block;color:var(--mute);font-size:12px;letter-spacing:.06em}
+.pair .big{font-size:28px;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stats .v{font-size:20px;font-weight:600}
+.sec{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:17px}
+#msg{margin:auto;color:var(--mute);font-size:20px;text-align:center;padding:40px}
+#bottom{display:grid;grid-template-columns:1fr 1fr;height:290px;border-top:1px solid var(--line);background:var(--panel)}
+#bottom>div{overflow:auto;padding:12px 16px;min-width:0}#bottom>div+div{border-left:1px solid var(--line)}
+#bottom th{background:var(--panel)}
+h3{margin:0 0 8px;font-size:14px;letter-spacing:.06em;color:var(--mute);font-weight:600}
+.trk{position:relative;height:70px;margin:22px 8px 10px}
+.trk .line{position:absolute;left:0;right:0;top:34px;height:2px;background:var(--line)}
+.trk .tick{position:absolute;top:26px;width:1px;height:18px;background:var(--mute)}
+.dot{position:absolute;top:29px;width:0}.dot i{display:block;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--text)}
+.dot b{position:absolute;left:0;transform:translateX(-50%);font-size:12px}.dot.me i{background:var(--orange)}.dot.me b{color:var(--orange)}
+.up{color:var(--green);font-size:13px}.dn{color:var(--red);font-size:13px}
+.pair svg{display:block;margin-top:4px}
+td.l .bar{display:inline-block;height:6px;background:var(--amber);margin-right:6px;vertical-align:middle}
+@media (max-width:900px){#bottom{grid-template-columns:1fr;height:auto}#bottom>div+div{border-left:0;border-top:1px solid var(--line)}}
+#filters{padding:6px 16px;border-bottom:1px solid var(--line);background:var(--panel);color:var(--mute)}#filters select{background:var(--bg);color:var(--text);border:1px solid var(--line);font:inherit;padding:2px 6px}
+@media (max-width:900px){main{flex-direction:column}aside{width:auto;border-left:0;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header id="hdr"><span class="meta">Waiting for data…</span></header>
+<div id="filters" hidden></div>
+<main>
+  <div id="tablewrap"><div id="msg">Start iRacing and load into a session.<br>This page updates automatically.</div></div>
+  <aside id="focus" hidden></aside>
+</main>
+<section id="bottom"><div id="track"></div><div id="strat"></div></section>
+<script>
+let sel = null, last = null, clsF = "";
+const $ = id => document.getElementById(id);
+const t3 = s => { if (s == null) return "–"; const m = Math.floor(s / 60); return m + ":" + (s % 60).toFixed(3).padStart(6, "0"); };
+const sx = s => s == null ? "–" : s.toFixed(3);
+const gp = g => g == null ? "–" : typeof g === "string" ? g : "+" + g.toFixed(3);
+const clock = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s % 60).padStart(2, "0"); };
+
+function secClass(v, bestOwn, bestAll) {
+  if (v == null) return "m";
+  if (bestAll != null && v <= bestAll + 1e-6) return "p";
+  if (bestOwn != null && v <= bestOwn + 1e-6) return "g";
+  return "";
+}
+
+function render(d) {
+  last = d;
+  if (!d.connected) {
+    $("hdr").innerHTML = '<span class="meta">Not connected</span>';
+    $("tablewrap").innerHTML = '<div id="msg">' + (d.error ? "Error: " + d.error : "Start iRacing and load into a session.<br>This page updates automatically.") + "</div>";
+    $("focus").hidden = true; $("track").innerHTML = $("strat").innerHTML = ""; return;
+  }
+  const n = d.nsec, cars = d.cars;
+  const classes = [...new Set(cars.map(c => c.cls).filter(Boolean))], fl = $("filters");
+  if (fl.dataset.k !== classes.join("|")) {
+    fl.dataset.k = classes.join("|"); fl.hidden = classes.length < 2;
+    fl.innerHTML = `Class <select id="clsSel"><option value="">All</option>${classes.map(x => `<option>${x}</option>`).join("")}</select>`;
+    $("clsSel").value = clsF; $("clsSel").onchange = e => { clsF = e.target.value; if (last) render(last); };
+  }
+  const bestAll = Array.from({ length: n }, (_, k) => Math.min(...cars.map(c => c.bests[k] ?? Infinity)));
+  const lapTxt = d.lapsTotal ? `<div class="lap">LAP ${d.leaderLap}<small>/ ${d.lapsTotal}</small></div>`
+                             : `<div class="lap">${d.timeRemain != null ? clock(d.timeRemain) : "LAP " + d.leaderLap}<small>${d.timeRemain != null ? "remaining" : ""}</small></div>`;
+  const f = d.fastest, me = d.me;
+  $("hdr").innerHTML = lapTxt +
+    (d.flag ? `<span class="flag ${d.flag}">${d.flag}</span>` : "") +
+    `<span class="meta"><b>${d.session}</b> · ${d.track}</span>` +
+    (f ? `<span class="meta">Fastest <b class="p">${t3(f.time)}</b> #${f.num} ${f.name}</span>` : "") +
+    '<span class="spacer"></span>' +
+    (me && me.fuel != null ? `<span class="meta">Fuel <b>${me.fuel.toFixed(1)}</b>${me.fuelLaps ? ` · ~<b>${me.fuelLaps.toFixed(1)}</b> laps` : ""}</span>` : "");
+
+  const bestLap = f ? f.time : null;
+  let h = "<table><thead><tr><th>POS</th><th>CAR</th><th class='l'>DRIVER</th><th>LAP</th><th>GAP</th><th>INT</th><th>LAST</th><th>BEST</th>";
+  for (let k = 0; k < n; k++) h += `<th>S${k + 1}</th>`;
+  h += "<th>PIT</th><th>PIT TIME</th><th>STINT</th></tr></thead><tbody>";
+  for (const c of cars.filter(x => !clsF || x.cls === clsF)) {
+    const gapTxt = c.pos === 1 ? `<span class="lead">${d.race ? "LEADER" : ""}</span>` : gp(c.gap);
+    const lastCls = c.last && bestLap && c.last <= bestLap + 1e-6 ? "p" : c.last && c.best && c.last <= c.best + 1e-6 ? "g" : "";
+    h += `<tr data-i="${c.idx}" class="${c.me ? "me" : ""} ${sel === c.idx ? "sel" : ""}">` +
+      `<td class="pos">${clsF ? c.cpos : c.pos}${chg(c, d)}</td><td class="num">${c.num}</td><td class="nm">${c.name}<span>${c.cls}</span></td>` +
+      `<td>${c.lap}</td><td>${gapTxt}</td><td>${c.pos === 1 ? "" : gp(c.int)}</td>` +
+      `<td class="${lastCls}">${t3(c.last)}</td><td class="${c.best && bestLap && c.best <= bestLap + 1e-6 ? "p" : ""}">${t3(c.best)}</td>`;
+    for (let k = 0; k < n; k++) h += `<td class="${secClass(c.secs[k], c.bests[k], bestAll[k])}">${sx(c.secs[k])}</td>`;
+    h += `<td class="${c.inpit ? "pit" : ""}">${c.inpit ? "IN PIT" : c.pits}</td><td>${c.pit != null ? c.pit.toFixed(1) : "–"}</td><td>${c.stint}</td></tr>`;
+  }
+  $("tablewrap").innerHTML = h + "</tbody></table>";
+  focusPanel(d); bottomPanels(d);
+}
+
+function focusPanel(d) {
+  const cars = d.cars;
+  let i = cars.findIndex(c => c.idx === sel);
+  if (i < 0) i = Math.max(0, cars.findIndex(c => c.me));
+  const c = cars[i], a = cars[i - 1], b = cars[i + 1], el = $("focus");
+  if (!c) { el.hidden = true; return; }
+  el.hidden = false;
+  const diff = c.last && c.best ? c.last - c.best : null;
+  let s = `<h2>${c.name}</h2><div class="sub">#${c.num} · ${c.car} · P${c.pos}${chg(c, d)}${c.grid ? " · Grid P" + c.grid : ""}</div>` +
+    `<div class="pair"><div><label>AHEAD${a ? " · " + a.name.split(" ").pop() : ""}</label><span class="big">${a ? gp(c.int) : "–"}</span>${a && d.race ? trend(c.hist, "closing") + spark(c.hist) : ""}</div>` +
+    `<div><label>BEHIND${b ? " · " + b.name.split(" ").pop() : ""}</label><span class="big">${b ? gp(b.int) : "–"}</span>${b && d.race ? trend(b.hist, "opening") + spark(b.hist) : ""}</div></div>` +
+    `<div class="stats"><div><label>LAST</label><span class="v">${t3(c.last)}</span></div><div><label>BEST</label><span class="v">${t3(c.best)}</span></div>` +
+    `<div><label>DIFF</label><span class="v ${diff != null && diff <= 0 ? "g" : "y"}">${diff == null ? "–" : (diff >= 0 ? "+" : "") + diff.toFixed(3)}</span></div></div>` +
+    `<div class="stats"><div><label>STINT</label><span class="v">${c.stint} L</span></div><div><label>STOPS</label><span class="v">${c.pits}</span></div>` +
+    `<div><label>LAST PIT</label><span class="v">${c.pit != null ? c.pit.toFixed(1) + "s" : "–"}</span></div></div>`;
+  s += `<div class="sec"><span class="m">PIT NOW</span><span>${pitNow(c, d)}</span></div><div class="sec"><span class="m">CATCH</span><span>${catchTxt(c, a)}</span></div><div style="height:10px"></div>`;
+  for (let k = 0; k < d.nsec; k++) {
+    const dl = c.secs[k] != null && c.bests[k] != null ? c.secs[k] - c.bests[k] : null;
+    s += `<div class="sec"><span class="m">S${k + 1}</span><span>${sx(c.secs[k])}</span><span class="${dl != null && dl <= 0.0005 ? "g" : "y"}">${dl == null ? "–" : "+" + dl.toFixed(3)}</span></div>`;
+  }
+  if (c.me && d.me.fuel != null) {
+    const m = d.me, p = m.plan, row = (l, v) => `<div class="sec"><span class="m">${l}</span><span>${v}</span></div>`;
+    s += `<h3 style="margin-top:14px">FUEL & STOPS</h3>` + row("Fuel", m.fuel.toFixed(1) + (m.cap ? " / " + m.cap.toFixed(0) : "")) +
+      row("Burn per lap", m.burn ? m.burn.toFixed(2) : "–") + row("Laps of fuel", m.fuelLaps ? m.fuelLaps.toFixed(1) : "–") +
+      (p ? row("Race laps left", p.lapsLeft) + row("Fuel lasts to lap", p.pitBy) + row("Fuel to add to finish", p.add.toFixed(1)) +
+        row("Stops still needed", p.stops ?? "–") + (p.stops != null ? row("Even stints left", "≈" + (p.lapsLeft / (p.stops + 1)).toFixed(0) + " laps") : "") : "");
+  }
+  s += `<h3 style="margin-top:14px">DRIVERS · time in car</h3>` + c.drv.map(([n, v]) =>
+    `<div class="sec"><span class="${n === c.cur ? "g" : ""}">${n}${n === c.cur ? " (now)" : ""}</span><span>${clock(v)}</span></div>`).join("") +
+    `<div class="sub" style="margin-top:6px">Current driver this stint: ${clock(c.drvStint)}</div>`;
+  el.innerHTML = s;
+}
+
+const rate = h => h && h.length >= 3 ? (h[h.length - 1] - h[0]) / (h.length - 1) : null;
+function chg(c, d) { if (!d.race || !c.grid) return ""; const x = c.grid - c.pos; return x ? ` <span class="${x > 0 ? "up" : "dn"}">${x > 0 ? "▲" : "▼"}${Math.abs(x)}</span>` : ""; }
+function spark(h) {
+  if (!h || h.length < 2) return "";
+  const mn = Math.min(...h), r = (Math.max(...h) - mn) || 1;
+  const pts = h.map((v, i) => (i * 140 / (h.length - 1)).toFixed(1) + "," + (34 - (v - mn) / r * 30).toFixed(1)).join(" ");
+  return `<svg width="140" height="36" viewBox="0 0 140 36"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+}
+function trend(h, goodWhen) {
+  const r = rate(h);
+  if (r == null) return '<span class="m">Gathering laps…</span>';
+  if (Math.abs(r) < 0.1) return '<span class="m">Steady</span>';
+  const closing = r < 0, good = goodWhen === "closing" ? closing : !closing;
+  return `<span class="${good ? "g" : "y"}">${closing ? "Closing" : "Opening"} ${Math.abs(r).toFixed(2)} s/lap</span>`;
+}
+function pitNow(c, d) {
+  if (!d.race || (c.pos > 1 && typeof c.gap !== "number")) return "–";
+  const t = (c.pos === 1 ? 0 : c.gap) + d.pitLoss;
+  let ahead = 0, bn = null, bg = -1;
+  for (const o of d.cars) {
+    if (o.idx === c.idx) continue;
+    const og = o.pos === 1 ? 0 : o.gap;
+    if (typeof og === "number" && og < t) { ahead++; if (og > bg) { bg = og; bn = o.num; } }
+  }
+  const p = ahead + 1, df = p - c.pos;
+  return `P${p} ${df ? `<span class="${df > 0 ? "dn" : "up"}">${df > 0 ? "▼" : "▲"}${Math.abs(df)}</span>` : ""}${bn ? `, behind #${bn}` : ""}`;
+}
+function catchTxt(c, a) {
+  const r = rate(c.hist);
+  if (!a || r == null || r > -0.05 || typeof c.int !== "number") return "–";
+  return `#${a.num} in ≈${Math.round(c.int / -r)} laps`;
+}
+function mapSvg(d) {
+  const P = d.trk, xs = P.map(p => p[0]), ys = P.map(p => p[1]), x0 = Math.min(...xs), y0 = Math.min(...ys);
+  const w = Math.max(...xs) - x0 || 1, h = Math.max(...ys) - y0 || 1, k = 300 / Math.max(w, h), pd = 14;
+  const X = p => ((p[0] - x0) * k + pd).toFixed(1), Y = p => ((h - (p[1] - y0)) * k + pd).toFixed(1);
+  let s = `<svg viewBox="0 0 ${(w * k + 2 * pd).toFixed(0)} ${(h * k + 2 * pd).toFixed(0)}" style="width:100%;max-height:190px"><polygon points="${P.map(p => X(p) + "," + Y(p)).join(" ")}" fill="none" stroke="#2a313d" stroke-width="7" stroke-linejoin="round"/>` +
+    `<circle cx="${X(P[0])}" cy="${Y(P[0])}" r="3" fill="#6a7280"/>`;
+  d.cars.forEach(c => { const p = P[Math.min(199, Math.floor(c.pct * 200))];
+    s += `<circle cx="${X(p)}" cy="${Y(p)}" r="4.5" fill="${c.me ? "#ff7a1a" : "#e6e8ec"}"/><text x="${+X(p) + 6}" y="${+Y(p) - 5}" font-size="10" font-weight="700" fill="${c.me ? "#ff7a1a" : "#e6e8ec"}">${c.num}</text>`; });
+  return s + "</svg>";
+}
+function bottomPanels(d) {
+  const cars = d.cars;
+  let t;
+  if (d.trk) t = "<h3>TRACK MAP</h3>" + mapSvg(d);
+  else {
+    t = '<h3>TRACK POSITION · the map appears after you complete a lap</h3><div class="trk"><div class="line"></div>';
+    (d.starts || []).forEach(p => t += `<div class="tick" style="left:${p * 100}%"></div>`);
+    cars.forEach((c, k) => t += `<div class="dot ${c.me ? "me" : ""}" style="left:${c.pct * 100}%"><b style="top:${k % 2 ? 14 : -16}px">${c.num}</b><i></i></div>`);
+    t += '</div><div class="m" style="font-size:13px;margin:0 8px 14px">Start/finish is the left edge. Orange is you.</div>';
+  }
+  const bt = d.race ? cars.filter(c => c.pos > 1 && typeof c.int === "number" && c.int < 1.5) : [];
+  t += "<h3>BATTLES · within 1.5 s</h3>" + (bt.length ? bt.map(c => { const a = cars[c.pos - 2];
+    return `<div class="sec"><span>#${a.num} ${a.name}</span><span class="m">${c.int.toFixed(3)}</span><span>#${c.num} ${c.name}</span></div>`; }).join("")
+    : '<div class="m">No close battles right now.</div>');
+  $("track").innerHTML = t;
+  const mx = Math.max(1, ...cars.map(c => c.stint));
+  let s = `<h3>STRATEGY · pit loss used: ${d.pitLoss.toFixed(0)} s</h3><table><thead><tr><th>POS</th><th class="l">DRIVER</th><th class="l">STINT</th><th>STOPS</th><th class="l">IF THEY PIT NOW</th><th class="l">CATCH</th></tr></thead><tbody>`;
+  cars.forEach((c, k) => s += `<tr data-i="${c.idx}" class="${c.me ? "me" : ""} ${sel === c.idx ? "sel" : ""}"><td class="pos" style="font-size:18px">${c.pos}</td><td class="nm">#${c.num} ${c.name}</td>` +
+    `<td class="l"><span class="bar" style="width:${c.stint / mx * 70}px"></span>${c.stint}</td><td>${c.pits}</td><td class="l">${pitNow(c, d)}</td><td class="l">${catchTxt(c, cars[k - 1])}</td></tr>`);
+  $("strat").innerHTML = s + "</tbody></table>";
+}
+function pick(e) {
+  const tr = e.target.closest("tr[data-i]");
+  if (tr) { sel = +tr.dataset.i; if (last) render(last); }
+}
+$("strat").addEventListener("click", pick);
+$("tablewrap").addEventListener("click", pick);
+
+async function loop() {
+  try { render(await (await fetch("/data")).json()); }
+  catch (e) { $("hdr").innerHTML = '<span class="meta">Lost connection to server.py</span>'; }
+  setTimeout(loop, 500);
+}
+loop();
+</script>
+</body>
+</html>
